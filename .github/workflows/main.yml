@@ -6,6 +6,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: tags
         uses: actions/github-script@v3
@@ -20,11 +25,13 @@ jobs:
             else
                 log=$(git log $t..HEAD --pretty=oneline)
             fi
+
             case "$log" in
-              *#major* ) new=$(semver bump major $t);;
-              *#patch* ) new=$(semver bump patch $t);;
-              * ) new=$(semver bump minor $t);;
+              ( *#major* ) new=$(semver bump major $t);;
+              ( *#patch* ) new=$(semver bump patch $t);;
+              ( * ) new=$(semver bump minor $t);;
             esac
+
             github.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
