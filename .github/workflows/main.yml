@@ -6,14 +6,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
+
     defaults:
-    run:
-      shell: bash
+      run:
+        shell: bash
+
     steps:
       # implement initial tagname using gitaction
+      - uses: action/github-script@v5
       - name: get tag
         id: get-tag
-        uses: action/github-script@v5
         with:
           github-token: ${{ github.token }}
           resut-encoding: string
