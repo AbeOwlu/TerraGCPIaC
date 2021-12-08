@@ -44,8 +44,9 @@ jobs:
                 * ) new=$(semver bump minor $t);;
             esac
             return "new"
-
+    steps:
       - name: tag & version
+        uses: action/github-script@v5
         with:
           github-token: ${{ github.token }}
           script: |
