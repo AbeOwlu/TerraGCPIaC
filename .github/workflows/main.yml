@@ -6,12 +6,50 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+    run:
+      shell: bash
     steps:
-      - uses: actions/checkout@master
-      - name: version and push tag
-        uses: anothrNick/github-tag-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO_OWNER: EmagIm
+      # implement initial tagname using gitaction
+      - name: get tag
+        id: get-tag
+        uses: action/github-script@v5
         with:
-          tag_prefix: "v"
+          github-token: ${{ github.token }}
+          resut-encoding: string
+          script: |
+            # get latest tag
+            t=$(git describe --tags `git rev-list --tags --max-count=1`)
+
+            # get current commit hash for tag
+            commit=$(git rev-parse HEAD)
+
+            # if there are none, start tags at 0.0.0
+            if [ -z "$t" ]
+            then
+                log=$(git log --pretty=oneline)
+                t=0.0.0
+            else
+                log=$(git log $t..HEAD --pretty=oneline)
+            fi
+
+            # get commit logs and determine home to bump the version
+            # supports #major, #minor, #patch (anything else will be 'minor')
+            case "$log" in
+                *#major* ) new=$(semver bump major $t);;
+                *#patch* ) new=$(semver bump patch $t);;
+                * ) new=$(semver bump minor $t);;
+            esac
+            return "new"
+
+      - name: tag & version
+        uses: actions/github-scripts@v5
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/v${{ steps.get-tag.outputs.result }}",
+              sha: context.sha
+            })
