@@ -16,6 +16,7 @@ jobs:
         with:
           fetch-depth: "0"
       - name: Bump version and push tag
+        id: current_tag
         uses: anothrNick/github-tag-action@1.36.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -23,3 +24,10 @@ jobs:
           RELEASE_BRANCHES: master, main
           DEFAULT_BUMP: patch
           VERBOSE: false
+
+      - name: Git release versioning
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.current_tag.outputs.new_tag }}
+          name: Release ${{ steps.current_tag.outputs.new_tag }}
+          body: ${{ steps.current_tag.outputs.changelog }}
