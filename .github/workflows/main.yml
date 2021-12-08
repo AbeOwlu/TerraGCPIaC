@@ -12,35 +12,13 @@ jobs:
         shell: bash
 
     steps:
-      - name: tags
-        uses: actions/github-script@v3
+      - uses: actions/checkout@v2
         with:
-          github-token: ${{ github.token }}
-          script: |
-            t=$(git describe --tags `git rev-list --tags --max-count=1`)
-            if [ -z "$t" ]
-            then
-                log=$(git log --pretty=oneline)
-                t=0.0.0
-            else
-                log=$(git log $t..HEAD --pretty=oneline)
-            fi
-
-            case "$log" in
-              *#major* ) new=$(semver bump major $t);;
-              *#patch* ) new=$(semver bump patch $t);;
-              * ) new=$(semver bump minor $t);;
-            esac
-            remote=$(git config --get remote.origin.url)
-            repo=$(basename $remote .git)
-
-            # POST a new ref to repo via Github API
-            curl -s -X POST https://api.github.com/repos/$REPO_OWNER/$repo/git/refs \
-            -H "Authorization: token $GITHUB_TOKEN" \
-
-            github.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: "refs/tags/v$new,
-              sha: context.sha
-            })
+          fetch-depth: "0"
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          INITIAL_VERSION: 1.0.0
+          RELEASE_BRANCHES: master, main
