@@ -8,13 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: tags
-        uses: actions/github-scripts@v5
+        uses: actions/github-scripts@v3
         with:
           github-token: ${{ github.token }}
           script: |
+            t=$(git describe --tags `git rev-list --tags --max-count=1`)
+            if [ -z "$t" ]
+            then
+                log=$(git log --pretty=oneline)
+                t=0.0.0
+            else
+                log=$(git log $t..HEAD --pretty=oneline)
+            fi
+            case "$log" in
+              *#major* ) new=$(semver bump major $t);;
+              *#patch* ) new=$(semver bump patch $t);;
+              * ) new=$(semver bump minor $t);;
+            esac
             github.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: "refs/tags/devd-testd-to-main",
+              ref: "refs/tags/v$new,
               sha: context.sha
             })
