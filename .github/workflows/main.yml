@@ -13,24 +13,34 @@ jobs:
 
     steps:
       - name: tags
-        uses: paulhatch/semantic-version@v4.0.2
+        uses: actions/github-script@v3
         with:
-          # The prefix to use to identify tags
-          tag_prefix: "v"
-          # A string which, if present in a git commit, indicates that a change represents a
-          # major (breaking) change, supports regular expressions wrapped with '/'
-          major_pattern: "/(MAJOR) (MAIN) (PROD) (PRODUCTION)/"
-          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
-          minor_pattern: "(MINOR)"
-          # A string to determine the format of the version output
-          format: "${major}.${minor}.${patch}-prerelease${increment}"
-          # Optional path to check for changes. If any changes are detected in the path the
-          # 'changed' output will true. Enter multiple paths separated by spaces.
-          change_path: "src/my-service"
-          # Named version, will be used as suffix for name version tag
-          namespace: my-service
-          # Indicate whether short tags like 'v1' should be supported. If false only full
-          # tags like 'v1.0.0' will be recognized.
-          short_tags: true
-          # If this is set to true, *every* commit will be treated as a new version.
-          bump_each_commit: true
+          github-token: ${{ github.token }}
+          script: |
+            t=$(git describe --tags `git rev-list --tags --max-count=1`)
+            if [ -z "$t" ]
+            then
+                log=$(git log --pretty=oneline)
+                t=0.0.0
+            else
+                log=$(git log $t..HEAD --pretty=oneline)
+            fi
+
+            case "$log" in
+              *#major* ) new=$(semver bump major $t);;
+              *#patch* ) new=$(semver bump patch $t);;
+              * ) new=$(semver bump minor $t);;
+            esac
+            remote=$(git config --get remote.origin.url)
+            repo=$(basename $remote .git)
+
+            # POST a new ref to repo via Github API
+            curl -s -X POST https://api.github.com/repos/$REPO_OWNER/$repo/git/refs \
+            -H "Authorization: token $GITHUB_TOKEN" \
+
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/v$new,
+              sha: context.sha
+            })
