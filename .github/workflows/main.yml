@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: tags
-      - uses: paulhatch/semantic-version@v4.0.2
+        uses: paulhatch/semantic-version@v4.0.2
         with:
           # The prefix to use to identify tags
           tag_prefix: "v"
